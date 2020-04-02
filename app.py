@@ -33,6 +33,10 @@ mail = Mail(dab_app)
 
 force_instant_defaults()
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#                                       * * *    D A T A B A S E   * * *
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 
 @dab_app.cli.command('db_create')
 def db_create():
@@ -95,14 +99,9 @@ def not_found():
     return jsonify(message='That resource was not found'), 404
 
 
-@dab_app.route('/display_users', methods=['GET'])
-def display_users():
-    users_list = User.query.all()
-    print(users_list)
-    result = users_schema.dump(users_list)
-    return jsonify(result)
-
-
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#                                       * * *    U S E R / B U Y E R   * * *
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @dab_app.route('/register_user', methods=['POST'])
 def register_user():
     email = request.form['email']
@@ -196,6 +195,30 @@ def login():
         return jsonify(message="Bad email or password"), 401
 
 
+@dab_app.route('/display_users', methods=['GET'])
+def display_users():
+    users_list = User.query.all()
+    print(users_list)
+    result = users_schema.dump(users_list)
+    return jsonify(result)
+
+
+@dab_app.route('/update_user_access', methods=['PUT'])
+@jwt_required
+def update_user_access():
+    username = request.form['username']
+    user = Listing.query.filter_by(username=username).first()
+    if user:
+        if user.access_tier < 3:
+            user.access_tier = 2
+            db.session.add(user)
+            db.session.commit()
+            return jsonify(messdage="User access tier modified to TIER TWO-USER."), 202
+        else:
+            return jsonify(messdage="Unable to downgrade user access.."), 403
+    else:
+        return jsonify(message="User does not exist"), 404
+
 # @dab_app.route('/retrieve_password/<string:email>', methods=['GET'])
 # def retrieve_password(email: str):
 #     user = User.query.filter_by(email=email).first()
@@ -219,6 +242,9 @@ def login():
 #         return jsonify(message="That log doesn't exist"), 404
 
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#                                       * * *    L I S T I N G   * * *
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @dab_app.route('/add_log', methods=['POST'])
 @jwt_required
 def add_listing():
@@ -260,23 +286,6 @@ def update_listing():
         return jsonify(message="That SKU does not exist"), 404
 
 
-@dab_app.route('/update_user_access', methods=['PUT'])
-@jwt_required
-def update_user_access():
-    username = request.form['username']
-    user = Listing.query.filter_by(username=username).first()
-    if user:
-        if user.access_tier < 3:
-            user.access_tier = 2
-            db.session.add(user)
-            db.session.commit()
-            return jsonify(messdage="User access tier modified to TIER TWO-USER."), 202
-        else:
-            return jsonify(messdage="Unable to downgrade user access.."), 403
-    else:
-        return jsonify(message="User does not exist"), 404
-
-
 @dab_app.route('/remove_listing/<int:sku>', methods=['DELETE'])
 @jwt_required
 def remove_listing(sku: int):
@@ -289,6 +298,9 @@ def remove_listing(sku: int):
         return jsonify(message="Listing does not exist."), 404
 
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#                                       * * *    I M A G E   * * *
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @dab_app.route('/add_image', methods=['POST'])
 @jwt_required
 def add_image():
@@ -341,7 +353,9 @@ def upload_file():
     '''
 
 
-# database models
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#                                   * * *    C L A S S    M O D E L S   * * *
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 class Listing(db.Model):
     __tablename__ = 'listings'
     sku = Column(Integer, unique=True, nullable=False, primary_key=True)
@@ -384,7 +398,9 @@ class Buyer(User):
 #     ADMIN = 3
 #     GOD = 4
 
-
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#                                       * * *    S C H E M A S   * * *
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 class ListingSchema(ma.Schema):
     class Meta:
         fields = ('listing_id', 'listing_title', 'sku', 'email', 'category', 'price', 'sales_count')
