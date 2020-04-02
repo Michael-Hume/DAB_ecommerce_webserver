@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, flash, redirect, url_for
+from flask import Flask, jsonify, request, flash, redirect, url_for, render_template
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, Integer, String, Float
 import os
@@ -175,24 +175,24 @@ def register_buyer():
                 return jsonify({'error': 'An error occurred saving the buyer to the database'}), 500
 
 
-@dab_app.route('/login', methods=['POST'])
-def login():
-    if request.is_json:
-        # email = request.json['email']
-        username = request.json['username']
-        hashed_password = request.json['password']
-    else:
-        # email = request.form['email']
-        username = request.form['username']
-        hashed_password = request.form['password']
-
-    clear_password = check_password_hash(hashed_password)
-    login_check = User.query.filter_by(username=username, password=clear_password).first()
-    if login_check:
-        access_token = create_access_token(identity=email)
-        return jsonify(message="Login succeeded!", access_token=access_token)
-    else:
-        return jsonify(message="Bad email or password"), 401
+# @dab_app.route('/login', methods=['POST'])
+# def login():
+#     if request.is_json:
+#         # email = request.json['email']
+#         username = request.json['username']
+#         hashed_password = request.json['password']
+#     else:
+#         # email = request.form['email']
+#         username = request.form['username']
+#         hashed_password = request.form['password']
+#
+#     clear_password = check_password_hash(hashed_password)
+#     login_check = User.query.filter_by(username=username, password=clear_password).first()
+#     if login_check:
+#         access_token = create_access_token(identity=email)
+#         return jsonify(message="Login succeeded!", access_token=access_token)
+#     else:
+#         return jsonify(message="Bad email or password"), 401
 
 
 @dab_app.route('/display_users', methods=['GET'])
@@ -324,7 +324,7 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-@dab_app.route('/', methods=['GET', 'POST'])
+@dab_app.route('/upload_file', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
         # check if the post request has the file part
@@ -434,5 +434,31 @@ users_schema = UserSchema(many=True)
 buyer_schema = BuyerSchema()
 buyers_schema = BuyerSchema(many=True)
 
+
+@dab_app.route('/')
+def home():
+    return render_template('home.html')
+
+
+def do_something(text1, text2):
+    text1 = text1.upper()
+    text2 = text2.upper()
+    combine = text1 + text2
+    return combine
+
+
+@dab_app.route('/join', methods=['GET','POST'])
+def my_form_post():
+    text1 = request.form['text1']
+    word = request.args.get('text1')
+    text2 = request.form['text2']
+    combine = do_something(text1,text2)
+    result = {
+        "output": combine
+    }
+    result = {str(key): value for key, value in result.items()}
+    return jsonify(result=result)
+
+
 if __name__ == '__main__':
-    dab_app.run()
+    dab_app.run(debug=True)
