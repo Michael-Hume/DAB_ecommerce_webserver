@@ -244,6 +244,24 @@ def remove_listing(sku: int):
         return jsonify(message="Listing does not exist."), 404
 
 
+@dab_app.route('/add_image', methods=['POST'])
+@jwt_required
+def add_image():
+    file_name = request.form['file_name']
+    file_name_check = Listing.query.filter_by(file_name=file_name).first()
+    if file_name_check:
+        return jsonify("That image has already been uploaded."), 409
+    else:
+        listing_sku = request.form['listing_sku']
+        img_path = request.form['img_path']
+        new_image = Image(file_name=file_name,
+                          listing_sku=listing_sku,
+                          img_path=img_path)
+        db.session.add(new_image)
+        db.session.commit()
+        return jsonify(message="New image added"), 201
+
+
 # database models
 class Listing(db.Model):
     __tablename__ = 'listings'
@@ -255,9 +273,10 @@ class Listing(db.Model):
     sales_count = Column(Integer, default=0)
 
 
-class Images(db.Model):
+class Image(db.Model):
     __tablename__ = 'images'
     img_id = Column(Integer, primary_key=True)
+    file_name = Column(String, nullable=False, unique=True)
     listing_sku = Column(Integer, db.ForeignKey('listings.sku'), nullable=False, foreign_key=True)
     img_path = Column(String, nullable=False)
 
