@@ -142,7 +142,6 @@ def login():
         hashed_password = request.form['password']
 
     clear_password = check_password_hash(hashed_password)
-
     login_check = User.query.filter_by(username=username, password=clear_password).first()
     if login_check:
         access_token = create_access_token(identity=email)
